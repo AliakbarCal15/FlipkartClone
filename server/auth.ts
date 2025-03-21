@@ -5,17 +5,15 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
-import createMemoryStore from "memorystore";
+import { User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends User {}
+    interface User extends SelectUser {}
   }
 }
 
 const scryptAsync = promisify(scrypt);
-const MemoryStore = createMemoryStore(session);
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -31,19 +29,13 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  const sessionSecret = process.env.SESSION_SECRET || "flipkart-clone-secret-key";
-  
   const sessionSettings: session.SessionOptions = {
-    secret: sessionSecret,
+    secret: process.env.SESSION_SECRET || "flipkart-clone-secret",
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    }),
+    store: storage.sessionStore,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax"
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
   };
 
@@ -61,8 +53,8 @@ export function setupAuth(app: Express) {
         } else {
           return done(null, user);
         }
-      } catch (error) {
-        return done(error);
+      } catch (err) {
+        return done(err);
       }
     }),
   );
@@ -72,59 +64,53 @@ export function setupAuth(app: Express) {
     try {
       const user = await storage.getUser(id);
       done(null, user);
-    } catch (error) {
-      done(error);
+    } catch (err) {
+      done(err);
     }
   });
 
-  // Register route
   app.post("/api/register", async (req, res, next) => {
     try {
-      // Validate required fields
-      const { username, password, name, email } = req.body;
-      if (!username || !password || !name || !email) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
-
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(username);
+      const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      // Hash password and create user
-      const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         ...req.body,
-        password: hashedPassword,
+        password: await hashPassword(req.body.password),
       });
 
-      // Auto login after registration
       req.login(user, (err) => {
         if (err) return next(err);
-        return res.status(201).json(user);
+        
+        // Don't return password in response
+        const { password, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
-      console.error("Registration error:", error);
-      return res.status(500).json({ message: "Registration failed" });
+      const message = error instanceof Error ? error.message : "Registration failed";
+      res.status(400).json({ message });
     }
   });
 
-  // Login route
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
+      
       req.login(user, (err) => {
         if (err) return next(err);
-        return res.status(200).json(user);
+        
+        // Don't return password in response
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
       });
     })(req, res, next);
   });
 
-  // Logout route
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
@@ -132,9 +118,11 @@ export function setupAuth(app: Express) {
     });
   });
 
-  // User data route
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
-    res.json(req.user);
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Don't return password in response
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
   });
 }
