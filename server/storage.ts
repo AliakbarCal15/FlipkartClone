@@ -135,10 +135,10 @@ export class MemStorage implements IStorage {
     
     // Add banners
     const banners = [
-      { image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=300&fit=crop", link: "/electronics" },
-      { image: "https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=1200&h=300&fit=crop", link: "/fashion" },
-      { image: "https://images.unsplash.com/photo-1607082349566-187342175e2f?w=1200&h=300&fit=crop", link: "/offers" },
-      { image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=1200&h=300&fit=crop", link: "/home" }
+      { image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=1200&h=300&fit=crop", link: "/electronics", active: true },
+      { image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200&h=300&fit=crop", link: "/fashion", active: true },
+      { image: "https://images.unsplash.com/photo-1607083206870-f8b9affcd026?w=1200&h=300&fit=crop", link: "/offers", active: true },
+      { image: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&h=300&fit=crop", link: "/home", active: true }
     ];
     
     banners.forEach(banner => {
@@ -156,8 +156,9 @@ export class MemStorage implements IStorage {
         stock: 100,
         brand: "boAt",
         category: "Electronics",
-        thumbnail: "https://images.unsplash.com/photo-1604671801908-6f0c6a092c05?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1604671801908-6f0c6a092c05?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=400&fit=crop", 
+                "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400&h=400&fit=crop"]
       },
       {
         title: "Gaming Mouse",
@@ -168,8 +169,9 @@ export class MemStorage implements IStorage {
         stock: 50,
         brand: "Logitech",
         category: "Electronics",
-        thumbnail: "https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1605773527852-c546a8584ea3?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1605773527852-c546a8584ea3?w=400&h=400&fit=crop", 
+                "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=400&h=400&fit=crop"]
       },
       {
         title: "Bluetooth Speakers",
@@ -180,8 +182,9 @@ export class MemStorage implements IStorage {
         stock: 75,
         brand: "JBL",
         category: "Electronics",
-        thumbnail: "https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop"]
       },
       {
         title: "4K Smart TV",
@@ -192,8 +195,9 @@ export class MemStorage implements IStorage {
         stock: 30,
         brand: "Samsung",
         category: "Electronics",
-        thumbnail: "https://images.unsplash.com/photo-1625077359756-4c63873a3ad0?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1625077359756-4c63873a3ad0?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1601944177325-f8867652837f?w=400&h=400&fit=crop"]
       },
       {
         title: "Trimmer",
@@ -204,8 +208,9 @@ export class MemStorage implements IStorage {
         stock: 120,
         brand: "Philips",
         category: "Electronics",
-        thumbnail: "https://images.unsplash.com/photo-1544866092-1677b00c2040?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1544866092-1677b00c2040?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1585914643208-46d2eaec3030?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1585914643208-46d2eaec3030?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1589782431097-ffc26baa6fc9?w=400&h=400&fit=crop"]
       },
       {
         title: "Gaming Laptop",
@@ -216,8 +221,9 @@ export class MemStorage implements IStorage {
         stock: 25,
         brand: "Asus",
         category: "Electronics",
-        thumbnail: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1511385348-a52b4a160dc2?w=400&h=400&fit=crop"]
       }
     ];
     
@@ -232,8 +238,9 @@ export class MemStorage implements IStorage {
         stock: 200,
         brand: "Allen Solly",
         category: "Fashion",
-        thumbnail: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1598032895397-b9472444bf93?w=400&h=400&fit=crop"]
       },
       {
         title: "Women's Tops",
@@ -244,8 +251,9 @@ export class MemStorage implements IStorage {
         stock: 150,
         brand: "H&M",
         category: "Fashion",
-        thumbnail: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1619603364904-c0498317e145?w=400&h=400&fit=crop"]
       },
       {
         title: "Running Shoes",
@@ -256,8 +264,9 @@ export class MemStorage implements IStorage {
         stock: 80,
         brand: "Nike",
         category: "Fashion",
-        thumbnail: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1607522370275-f14206abe5d3?w=400&h=400&fit=crop"]
       },
       {
         title: "Watches",
@@ -268,8 +277,9 @@ export class MemStorage implements IStorage {
         stock: 60,
         brand: "Fossil",
         category: "Fashion",
-        thumbnail: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=400&h=400&fit=crop"]
       },
       {
         title: "Denim Jeans",
@@ -280,8 +290,9 @@ export class MemStorage implements IStorage {
         stock: 100,
         brand: "Levi's",
         category: "Fashion",
-        thumbnail: "https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&h=400&fit=crop"]
       },
       {
         title: "Sunglasses",
@@ -292,8 +303,9 @@ export class MemStorage implements IStorage {
         stock: 70,
         brand: "Ray-Ban",
         category: "Fashion",
-        thumbnail: "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1591561954557-26941169b49e?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop"]
       }
     ];
     
@@ -308,8 +320,9 @@ export class MemStorage implements IStorage {
         stock: 50,
         brand: "Prestige",
         category: "Home",
-        thumbnail: "https://images.unsplash.com/photo-1574269910231-bc508bcb615f?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1574269910231-bc508bcb615f?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1626806787461-102c1a75f344?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1626806787461-102c1a75f344?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1577460551100-d3f8103db5f1?w=400&h=400&fit=crop"]
       },
       {
         title: "Cotton Bedsheets",
@@ -320,8 +333,9 @@ export class MemStorage implements IStorage {
         stock: 100,
         brand: "Bombay Dyeing",
         category: "Home",
-        thumbnail: "https://images.unsplash.com/photo-1567127662969-5ce4678e68ea?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1567127662969-5ce4678e68ea?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1629949009714-fd4df7ae10f8?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1629949009714-fd4df7ae10f8?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=400&h=400&fit=crop"]
       },
       {
         title: "Steel Water Bottles",
@@ -332,8 +346,9 @@ export class MemStorage implements IStorage {
         stock: 150,
         brand: "Milton",
         category: "Home",
-        thumbnail: "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1589365278144-c9e705f843ba?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1589365278144-c9e705f843ba?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1610824352934-c10d87b700cc?w=400&h=400&fit=crop"]
       },
       {
         title: "Induction Cooktops",
@@ -344,8 +359,9 @@ export class MemStorage implements IStorage {
         stock: 40,
         brand: "Prestige",
         category: "Home",
-        thumbnail: "https://images.unsplash.com/photo-1565792508300-56431307bb7a?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1565792508300-56431307bb7a?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1596223575327-89789efe0469?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1596223575327-89789efe0469?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1495433324511-bf8e92934d90?w=400&h=400&fit=crop"]
       },
       {
         title: "Cookware Sets",
@@ -356,8 +372,9 @@ export class MemStorage implements IStorage {
         stock: 30,
         brand: "Hawkins",
         category: "Home",
-        thumbnail: "https://images.unsplash.com/photo-1583947582886-f40b5f92c8c5?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1583947582886-f40b5f92c8c5?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1584283626938-86939326ae65?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1584283626938-86939326ae65?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1590794056486-986bf7f3473f?w=400&h=400&fit=crop"]
       },
       {
         title: "Air Fryers",
@@ -368,8 +385,9 @@ export class MemStorage implements IStorage {
         stock: 20,
         brand: "Philips",
         category: "Home",
-        thumbnail: "https://images.unsplash.com/photo-1615484477778-ca3b77940c25?w=400&h=400&fit=crop",
-        images: ["https://images.unsplash.com/photo-1615484477778-ca3b77940c25?w=400&h=400&fit=crop"]
+        thumbnail: "https://images.unsplash.com/photo-1648649893252-296c7123646b?w=400&h=400&fit=crop",
+        images: ["https://images.unsplash.com/photo-1648649893252-296c7123646b?w=400&h=400&fit=crop",
+                "https://images.unsplash.com/photo-1600367163359-d51d40bcb5f8?w=400&h=400&fit=crop"]
       }
     ];
     
