@@ -30,12 +30,13 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "flipkart-clone-secret",
+    secret: process.env.SESSION_SECRET || "flipkart_clone_secret_key",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     }
   };
 
@@ -53,8 +54,8 @@ export function setupAuth(app: Express) {
         } else {
           return done(null, user);
         }
-      } catch (err) {
-        return done(err);
+      } catch (error) {
+        return done(error);
       }
     }),
   );
