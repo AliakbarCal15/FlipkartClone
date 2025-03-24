@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { loginSchema } from "@shared/schema";
+import { loginSchema, LoginData } from "@shared/schema";
 import MainLayout from "@/components/layouts/main-layout";
 import {
   Card,
