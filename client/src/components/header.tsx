@@ -81,6 +81,10 @@ const Header = () => {
                     <Link href="/profile" className="cursor-pointer">Rewards</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="cursor-pointer">Admin Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     Logout
                   </DropdownMenuItem>
@@ -172,6 +176,11 @@ const Header = () => {
                   <li>
                     <Link href="/profile" className="block px-2 py-1.5">
                       Wishlist
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/admin" className="block px-2 py-1.5">
+                      Admin Dashboard
                     </Link>
                   </li>
                   <li>

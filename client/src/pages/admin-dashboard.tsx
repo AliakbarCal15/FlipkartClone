@@ -42,9 +42,9 @@ import {
   Trash 
 } from "lucide-react";
 
-// Import product management component
-import { ManageProducts } from "@/components/admin/manage-products";
-import { ManageOrders } from "@/components/admin/manage-orders";
+// Import product management components directly
+import { ManageProducts } from "../components/admin/manage-products";
+import { ManageOrders } from "../components/admin/manage-orders";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");

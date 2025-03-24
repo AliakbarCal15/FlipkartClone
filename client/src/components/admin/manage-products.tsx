@@ -188,6 +188,7 @@ export const ManageProducts = () => {
       const newProduct: Product = {
         ...data,
         id: products.length ? Math.max(...products.map(p => p.id)) + 1 : 1,
+        rating: 0,
         createdAt: new Date().toISOString()
       };
       const updatedProducts = [...products, newProduct];
@@ -344,7 +345,13 @@ export const ManageProducts = () => {
                           <FormItem>
                             <FormLabel>Discount (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" min="0" max="100" {...field} />
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                max="100" 
+                                value={field.value?.toString() || "0"} 
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
