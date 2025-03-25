@@ -126,4 +126,15 @@ export function setupAuth(app: Express) {
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
+
+  // Check if user is admin
+  app.get("/api/check-admin", (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    
+    res.status(200).json({ isAdmin: true });
+  });
 }

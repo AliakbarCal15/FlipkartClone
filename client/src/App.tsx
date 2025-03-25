@@ -14,7 +14,9 @@ import CategoryPage from "@/pages/category-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 import { AuthProvider } from "@/hooks/use-auth";
+import { AdminProvider } from "@/hooks/use-admin";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 
 function Router() {
   return (
@@ -30,8 +32,8 @@ function Router() {
       <ProtectedRoute path="/profile" component={ProfilePage} />
       
       {/* Admin Routes */}
-      <ProtectedRoute path="/admin" component={AdminDashboard} />
-      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} />
+      <AdminProtectedRoute path="/admin" component={AdminDashboard} />
+      <AdminProtectedRoute path="/admin/dashboard" component={AdminDashboard} />
       
       <Route component={NotFound} />
     </Switch>
@@ -42,8 +44,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <AdminProvider>
+          <Router />
+          <Toaster />
+        </AdminProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -113,6 +113,15 @@ export class MemStorage implements IStorage {
   }
 
   private initializeDefaultData() {
+    // Create admin user
+    this.createUser({
+      username: "admin",
+      password: "$2b$10$Lcj1Cq.ZB5fvIAK1Qknl6.ZFJgkhZ7YyBcTu.YFY5xWQRWm9MK0I2", // password123
+      name: "Admin",
+      email: "admin@example.com",
+      isAdmin: true
+    });
+    
     // Add categories
     const categories = [
       { name: "Grocery", image: "https://rukminim1.flixcart.com/flap/128/128/image/29327f40e9c4d26b.png" },
@@ -411,7 +420,23 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
     const now = new Date();
-    const user: User = { ...insertUser, id, createdAt: now };
+    
+    // Ensure all fields have proper values to satisfy type requirements
+    const user: User = { 
+      id, 
+      createdAt: now,
+      username: insertUser.username,
+      password: insertUser.password,
+      name: insertUser.name,
+      email: insertUser.email,
+      phone: insertUser.phone || null,
+      address: insertUser.address || null,
+      city: insertUser.city || null,
+      state: insertUser.state || null,
+      pincode: insertUser.pincode || null,
+      isAdmin: insertUser.isAdmin ?? false
+    };
+    
     this.usersMap.set(id, user);
     return user;
   }
