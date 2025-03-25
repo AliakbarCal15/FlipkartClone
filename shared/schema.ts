@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   city: text("city"),
   state: text("state"),
   pincode: text("pincode"),
+  isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
