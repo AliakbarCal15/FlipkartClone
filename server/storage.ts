@@ -24,6 +24,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   getUserCount(): Promise<number>;
+  updateUserAdminStatus(id: number, isAdmin: boolean): Promise<User | undefined>;
   
   // Product methods
   getProduct(id: number): Promise<Product | undefined>;
@@ -531,6 +532,18 @@ export class MemStorage implements IStorage {
   
   async getUserCount(): Promise<number> {
     return this.usersMap.size;
+  }
+  
+  async updateUserAdminStatus(id: number, isAdmin: boolean): Promise<User | undefined> {
+    const user = await this.getUser(id);
+    
+    if (!user) {
+      return undefined;
+    }
+    
+    const updatedUser: User = { ...user, isAdmin };
+    this.usersMap.set(id, updatedUser);
+    return updatedUser;
   }
   
   // Product methods

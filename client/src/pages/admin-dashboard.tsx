@@ -134,9 +134,43 @@ export default function AdminDashboard() {
     },
   });
   
+  // Toggle user admin status mutation
+  const toggleAdminStatusMutation = useMutation({
+    mutationFn: async ({ userId, isAdmin }: { userId: number; isAdmin: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${userId}`, { isAdmin });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to update user admin status");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      const action = data.isAdmin ? "promoted to admin" : "demoted from admin";
+      toast({
+        title: "Admin status updated",
+        description: `User has been ${action} successfully`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   const handleDeleteUser = (userId: number) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       deleteUserMutation.mutate(userId);
+    }
+  };
+  
+  const handleToggleAdminStatus = (userId: number, currentStatus: boolean) => {
+    const action = currentStatus ? "remove admin privileges from" : "promote";
+    if (window.confirm(`Are you sure you want to ${action} this user?`)) {
+      toggleAdminStatusMutation.mutate({ userId, isAdmin: !currentStatus });
     }
   };
 
@@ -388,8 +422,18 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Edit className="h-4 w-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className={`h-8 px-2 ${user.isAdmin ? 'text-amber-600' : 'text-green-600'}`}
+                              onClick={() => handleToggleAdminStatus(user.id, user.isAdmin)}
+                              disabled={toggleAdminStatusMutation.isPending && toggleAdminStatusMutation.variables?.userId === user.id}
+                            >
+                              {toggleAdminStatusMutation.isPending && toggleAdminStatusMutation.variables?.userId === user.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              ) : (
+                                user.isAdmin ? 'Revoke Admin' : 'Make Admin'
+                              )}
                             </Button>
                             <Button 
                               variant="ghost" 
