@@ -57,9 +57,10 @@ import {
   ResponsiveContainer
 } from "recharts";
 
-// Import product management components directly
+// Import admin components
 import { ManageProducts } from "../components/admin/manage-products";
 import { ManageOrders } from "../components/admin/manage-orders";
+import { AddUserDialog } from "../components/admin/add-user-dialog";
 
 type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -366,7 +367,7 @@ export default function AdminDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>User Management</CardTitle>
-                <Button size="sm">Add User</Button>
+                <AddUserDialog />
               </div>
               <CardDescription>
                 Manage your users here. You can add, edit, or delete users.

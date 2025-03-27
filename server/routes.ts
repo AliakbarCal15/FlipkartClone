@@ -1,9 +1,16 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { z } from "zod";
-import { insertCartItemSchema, insertOrderItemSchema, insertOrderSchema, insertReviewSchema } from "@shared/schema";
+import { 
+  insertCartItemSchema,
+  insertOrderItemSchema,
+  insertOrderSchema,
+  insertReviewSchema,
+  insertUserSchema,
+  insertProductSchema
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -274,6 +281,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const users = await storage.getAllUsers();
       res.json(users);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Create new user
+  app.post("/api/admin/users", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Check if username or email already exists
+      const existingUserByUsername = await storage.getUserByUsername(req.body.username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      // Verify the data is valid according to the schema
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Hash the password
+      const hashedPassword = await hashPassword(userData.password);
+      
+      // Create user with hashed password
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+      
+      // Return the created user (without the password)
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
     } catch (error) {
       const message = error instanceof Error ? error.message : "An error occurred";
       res.status(500).json({ message });
