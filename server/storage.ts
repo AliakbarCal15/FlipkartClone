@@ -131,6 +131,22 @@ export class MemStorage implements IStorage {
       isAdmin: true
     });
     
+    // Create additional regular users for testing
+    const regularUsers = [
+      { username: "user1", password: "$2b$10$T9vDN1QHdGzm7IZ5tWYn3uZ60RxC4KVk4queR2GdD3esaA7NVOFqu", name: "John Doe", email: "john@example.com" },
+      { username: "user2", password: "$2b$10$T9vDN1QHdGzm7IZ5tWYn3uZ60RxC4KVk4queR2GdD3esaA7NVOFqu", name: "Jane Smith", email: "jane@example.com" },
+      { username: "user3", password: "$2b$10$T9vDN1QHdGzm7IZ5tWYn3uZ60RxC4KVk4queR2GdD3esaA7NVOFqu", name: "Robert Johnson", email: "robert@example.com" },
+      { username: "user4", password: "$2b$10$T9vDN1QHdGzm7IZ5tWYn3uZ60RxC4KVk4queR2GdD3esaA7NVOFqu", name: "Emily Davis", email: "emily@example.com" },
+      { username: "user5", password: "$2b$10$T9vDN1QHdGzm7IZ5tWYn3uZ60RxC4KVk4queR2GdD3esaA7NVOFqu", name: "Michael Wilson", email: "michael@example.com" }
+    ];
+    
+    regularUsers.forEach(user => {
+      this.createUser({ 
+        ...user, 
+        isAdmin: false 
+      });
+    });
+    
     // Add categories
     const categories = [
       { name: "Grocery", image: "https://rukminim1.flixcart.com/flap/128/128/image/29327f40e9c4d26b.png" },
@@ -413,6 +429,55 @@ export class MemStorage implements IStorage {
     [...electronicsProducts, ...fashionProducts, ...homeProducts].forEach(product => {
       this.createProduct(product);
     });
+    
+    // Create sample orders for visualization
+    // Helper function to get random date within last 7 days
+    const getRandomDate = () => {
+      const date = new Date();
+      const daysAgo = Math.floor(Math.random() * 7);
+      date.setDate(date.getDate() - daysAgo);
+      return date;
+    };
+    
+    // Create orders for each user
+    const orderStatuses: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled')[] = [
+      'pending', 'processing', 'shipped', 'delivered', 'cancelled'
+    ];
+    
+    // Create 15 sample orders for visualization
+    for (let i = 2; i <= 6; i++) { // For each regular user (userId 2-6)
+      // Each user has 3 orders
+      for (let j = 0; j < 3; j++) {
+        const orderDate = getRandomDate();
+        const randomStatus = orderStatuses[Math.floor(Math.random() * orderStatuses.length)];
+        const totalAmount = Math.floor(Math.random() * 10000) + 1000; // Random amount between 1000-11000
+        
+        const order = this.createOrder({
+          userId: i,
+          totalAmount,
+          status: randomStatus,
+          shippingAddress: "123 Test Street, Test City, 400001",
+          paymentMethod: Math.random() > 0.5 ? "Credit Card" : "UPI",
+          createdAt: orderDate
+        });
+        
+        // Add 1-3 random products to each order
+        const numProducts = Math.floor(Math.random() * 3) + 1;
+        for (let k = 0; k < numProducts; k++) {
+          const productId = Math.floor(Math.random() * 18) + 1; // Random product (1-18)
+          const product = this.productsMap.get(productId);
+          
+          if (product) {
+            this.addOrderItem({
+              orderId: order.id,
+              productId,
+              quantity: Math.floor(Math.random() * 3) + 1,
+              price: product.price,
+            });
+          }
+        }
+      }
+    }
   }
 
   // User methods
