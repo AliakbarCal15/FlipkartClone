@@ -123,11 +123,17 @@ export const ManageProducts = () => {
   // Add Product Mutation
   const addProductMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
+      console.log("Submitting product data:", data);
       const res = await apiRequest("POST", "/api/admin/products", data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || errorData.message || "Failed to add product");
+      }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       // Invalidate and refetch products list
+      console.log("Product added successfully:", product);
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Product Added",
@@ -138,6 +144,7 @@ export const ManageProducts = () => {
       form.reset();
     },
     onError: (error: Error) => {
+      console.error("Failed to add product:", error);
       toast({
         title: "Failed to Add Product",
         description: error.message,
@@ -149,11 +156,17 @@ export const ManageProducts = () => {
   // Update Product Mutation
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: ProductFormValues }) => {
+      console.log("Updating product data:", { id, data });
       const res = await apiRequest("PATCH", `/api/admin/products/${id}`, data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || errorData.message || "Failed to update product");
+      }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       // Invalidate and refetch products list
+      console.log("Product updated successfully:", product);
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Product Updated",
@@ -164,6 +177,7 @@ export const ManageProducts = () => {
       form.reset();
     },
     onError: (error: Error) => {
+      console.error("Failed to update product:", error);
       toast({
         title: "Failed to Update Product",
         description: error.message,
@@ -175,10 +189,17 @@ export const ManageProducts = () => {
   // Delete Product Mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/products/${id}`);
+      console.log("Deleting product with ID:", id);
+      const res = await apiRequest("DELETE", `/api/admin/products/${id}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete product");
+      }
+      return;
     },
     onSuccess: () => {
       // Invalidate and refetch products list
+      console.log("Product deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Product Deleted",
@@ -186,6 +207,7 @@ export const ManageProducts = () => {
       });
     },
     onError: (error: Error) => {
+      console.error("Failed to delete product:", error);
       toast({
         title: "Failed to Delete Product",
         description: error.message,

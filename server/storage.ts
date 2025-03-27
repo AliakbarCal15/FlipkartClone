@@ -31,6 +31,7 @@ export interface IStorage {
   getProducts(options?: { limit?: number, category?: string }): Promise<Product[]>;
   getProductsByCategory(category: string): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, data: Partial<Omit<Product, 'id' | 'createdAt'>>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
   getProductCount(): Promise<number>;
   
@@ -552,6 +553,24 @@ export class MemStorage implements IStorage {
     }
     this.productsMap.delete(id);
     return true;
+  }
+  
+  async updateProduct(id: number, data: Partial<Omit<Product, 'id' | 'createdAt'>>): Promise<Product | undefined> {
+    const product = this.productsMap.get(id);
+    if (!product) {
+      return undefined;
+    }
+    
+    const updatedProduct: Product = {
+      ...product,
+      ...data,
+      // Ensure these stay as they were or use default values
+      id,
+      createdAt: product.createdAt
+    };
+    
+    this.productsMap.set(id, updatedProduct);
+    return updatedProduct;
   }
 
   async getProductsByCategory(category: string): Promise<Product[]> {

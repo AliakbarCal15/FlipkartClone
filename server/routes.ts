@@ -343,9 +343,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      const product = await storage.createProduct(req.body);
-      res.status(201).json(product);
+      console.log("Creating product with data:", req.body);
+      
+      try {
+        // Validate the product data with the schema
+        const productData = insertProductSchema.parse(req.body);
+        const product = await storage.createProduct(productData);
+        console.log("Product created successfully:", product);
+        res.status(201).json(product);
+      } catch (validationError) {
+        console.error("Product validation failed:", validationError);
+        return res.status(400).json({ 
+          message: "Invalid product data", 
+          details: validationError instanceof Error ? validationError.message : String(validationError)
+        });
+      }
     } catch (error) {
+      console.error("Error creating product:", error);
       const message = error instanceof Error ? error.message : "An error occurred";
       res.status(500).json({ message });
     }
@@ -371,17 +385,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Product not found" });
       }
       
-      // Delete the old product
-      await storage.deleteProduct(id);
-      
-      // Create a new product with the same ID and updated fields
-      const updatedProduct = await storage.createProduct({
-        ...req.body,
-        id
-      });
-      
-      console.log("Product updated successfully", { updatedProduct });
-      res.json(updatedProduct);
+      try {
+        // Validate the product data with the schema
+        const productData = insertProductSchema.parse(req.body);
+        
+        // Use our new updateProduct method which handles the ID properly
+        const updatedProduct = await storage.updateProduct(id, productData);
+        
+        if (!updatedProduct) {
+          console.log("Failed to update product, returned undefined");
+          return res.status(404).json({ message: "Failed to update product" });
+        }
+        
+        console.log("Product updated successfully", { updatedProduct });
+        res.json(updatedProduct);
+      } catch (validationError) {
+        console.error("Product validation failed:", validationError);
+        return res.status(400).json({ 
+          message: "Invalid product data", 
+          details: validationError instanceof Error ? validationError.message : String(validationError)
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "An error occurred";
       console.error("Error updating product", { error, message });
