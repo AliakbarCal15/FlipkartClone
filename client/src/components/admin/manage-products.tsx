@@ -97,11 +97,13 @@ const productSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.coerce.number().min(1, "Price must be greater than 0"),
   discountPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
-  stock: z.coerce.number().min(0, "Stock cannot be negative"),
+  rating: z.coerce.number().min(0).max(5).optional().nullable(),
+  stock: z.coerce.number().min(0, "Stock cannot be negative").int("Stock must be a whole number"),
   brand: z.string().min(2, "Brand must be at least 2 characters"),
   category: z.string().min(2, "Please select a category"),
   thumbnail: z.string().url("Please enter a valid URL for the thumbnail"),
   images: z.array(z.string().url("Please enter valid URLs for images"))
+    .min(1, "At least one image URL is required")
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
