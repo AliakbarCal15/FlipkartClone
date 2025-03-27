@@ -172,7 +172,8 @@ export class MemStorage implements IStorage {
       { image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=1200&h=300&fit=crop", link: "/electronics", active: true },
       { image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200&h=300&fit=crop", link: "/fashion", active: true },
       { image: "https://images.unsplash.com/photo-1607083206870-f8b9affcd026?w=1200&h=300&fit=crop", link: "/offers", active: true },
-      { image: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&h=300&fit=crop", link: "/home", active: true }
+      { image: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&h=300&fit=crop", link: "/home", active: true },
+      { image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=300&fit=crop", link: "/top-offers", active: true }
     ];
     
     banners.forEach(banner => {
