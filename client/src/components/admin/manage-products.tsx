@@ -44,7 +44,11 @@ import {
   Edit, 
   Trash,
   ImageIcon,
-  Save
+  Save,
+  Upload,
+  Bell,
+  Percent,
+  Copy
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +66,12 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Import the new product management components
+import { BulkUpload } from "./bulk-upload";
+import { StockAlerts } from "./stock-alerts";
+import { ProductImageGallery } from "./product-image-gallery";
+import { DiscountManager } from "./discount-manager";
 
 // Mock data and interfaces for product management
 export interface Product {
@@ -467,6 +477,47 @@ export const ManageProducts = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Enhanced Product Management Toolbar */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <BulkUpload 
+            onProductsUploaded={(newProducts) => {
+              const updatedProducts = [...products, ...newProducts];
+              setProducts(updatedProducts);
+              localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+            }} 
+          />
+          
+          <StockAlerts 
+            products={products} 
+            onUpdateProductStock={(productId, newStock) => {
+              const updatedProducts = products.map(product => 
+                product.id === productId ? { ...product, stock: newStock } : product
+              );
+              setProducts(updatedProducts);
+              localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+            }} 
+          />
+          
+          <DiscountManager 
+            products={products}
+            categories={categories}
+            onApplyDiscount={(productIds, discountPercentage) => {
+              const updatedProducts = products.map(product => 
+                productIds.includes(product.id) 
+                  ? { ...product, discountPercentage } 
+                  : product
+              );
+              setProducts(updatedProducts);
+              localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+            }}
+          />
+          
+          <Button variant="outline">
+            <Copy className="mr-2 h-4 w-4" />
+            Duplicate
+          </Button>
+        </div>
+        
         <div className="flex flex-col md:flex-row justify-between mb-4 space-y-2 md:space-y-0">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
             <div className="relative w-full md:w-[300px]">
@@ -574,6 +625,18 @@ export const ManageProducts = () => {
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEditProduct(product)}>
                           <Edit className="h-4 w-4" />
                         </Button>
+                        
+                        <ProductImageGallery 
+                          product={product}
+                          onUpdateImages={(productId, images, thumbnail) => {
+                            const updatedProducts = products.map(p => 
+                              p.id === productId ? { ...p, images, thumbnail } : p
+                            );
+                            setProducts(updatedProducts);
+                            localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+                          }}
+                        />
+                        
                         <Button
                           variant="ghost"
                           size="sm"
