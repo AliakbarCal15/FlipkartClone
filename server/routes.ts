@@ -402,27 +402,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes - Update user admin status
   app.patch("/api/admin/users/:id", async (req, res) => {
     try {
+      console.log("Admin user update request received", { body: req.body, params: req.params });
+      
       if (!req.isAuthenticated() || !req.user.isAdmin) {
+        console.log("User not authenticated or not admin", { isAuthenticated: req.isAuthenticated(), isAdmin: req.user?.isAdmin });
         return res.status(403).json({ message: "Forbidden" });
       }
       
       const id = parseInt(req.params.id);
+      console.log("Parsing request body", { body: req.body });
       const { isAdmin } = z.object({ isAdmin: z.boolean() }).parse(req.body);
+      console.log("Body parsed successfully", { id, isAdmin });
       
       // Don't allow removing your own admin privileges
       if (id === req.user.id && !isAdmin) {
+        console.log("Attempt to remove own admin privileges", { userId: id, requesterId: req.user.id });
         return res.status(400).json({ message: "Cannot remove your own admin privileges" });
       }
       
+      console.log("Updating user admin status", { id, isAdmin });
       const updatedUser = await storage.updateUserAdminStatus(id, isAdmin);
       
       if (!updatedUser) {
+        console.log("User not found", { id });
         return res.status(404).json({ message: "User not found" });
       }
       
+      console.log("User updated successfully", { updatedUser });
       res.json(updatedUser);
     } catch (error) {
       const message = error instanceof Error ? error.message : "An error occurred";
+      console.error("Error updating user admin status", { error, message });
       res.status(500).json({ message });
     }
   });

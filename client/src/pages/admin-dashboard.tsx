@@ -138,14 +138,28 @@ export default function AdminDashboard() {
   // Toggle user admin status mutation
   const toggleAdminStatusMutation = useMutation({
     mutationFn: async ({ userId, isAdmin }: { userId: number; isAdmin: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/admin/users/${userId}`, { isAdmin });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to update user admin status");
+      try {
+        console.log("Sending admin toggle request:", { userId, isAdmin });
+        const res = await fetch(`/api/admin/users/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isAdmin }),
+          credentials: "include"
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: res.statusText }));
+          throw new Error(errorData.message || "Failed to update user admin status");
+        }
+        
+        return await res.json();
+      } catch (err) {
+        console.error("Error in toggle admin mutation:", err);
+        throw err;
       }
-      return await res.json();
     },
     onSuccess: (data) => {
+      console.log("Toggle admin success:", data);
       const action = data.isAdmin ? "promoted to admin" : "demoted from admin";
       toast({
         title: "Admin status updated",
@@ -154,6 +168,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
     onError: (error: Error) => {
+      console.error("Toggle admin error:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -170,8 +185,33 @@ export default function AdminDashboard() {
   
   const handleToggleAdminStatus = (userId: number, currentStatus: boolean) => {
     const action = currentStatus ? "remove admin privileges from" : "promote";
+    const newStatus = !currentStatus;
+    
+    console.log(`Attempting to change user ${userId} admin status from ${currentStatus} to ${newStatus}`);
+    
     if (window.confirm(`Are you sure you want to ${action} this user?`)) {
-      toggleAdminStatusMutation.mutate({ userId, isAdmin: !currentStatus });
+      try {
+        toggleAdminStatusMutation.mutate({ 
+          userId, 
+          isAdmin: newStatus 
+        }, {
+          onError: (error) => {
+            console.error("Error in toggle admin mutation handler:", error);
+            toast({
+              title: "Error updating user status",
+              description: error.message || "An unknown error occurred",
+              variant: "destructive",
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error in toggle admin handler:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update user status. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

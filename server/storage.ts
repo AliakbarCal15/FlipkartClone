@@ -118,8 +118,13 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000 // prune expired entries every 24h
     });
     
-    // Initialize with default data
-    this.initializeDefaultData();
+    // Initialize with default data without using async/await
+    // This is a synchronous operation despite some operations being async
+    try {
+      this.initializeDefaultData();
+    } catch (error) {
+      console.error("Error initializing default data:", error);
+    }
   }
 
   private initializeDefaultData() {
@@ -446,40 +451,8 @@ export class MemStorage implements IStorage {
       'pending', 'processing', 'shipped', 'delivered', 'cancelled'
     ];
     
-    // Create 15 sample orders for visualization
-    for (let i = 2; i <= 6; i++) { // For each regular user (userId 2-6)
-      // Each user has 3 orders
-      for (let j = 0; j < 3; j++) {
-        const orderDate = getRandomDate();
-        const randomStatus = orderStatuses[Math.floor(Math.random() * orderStatuses.length)];
-        const totalAmount = Math.floor(Math.random() * 10000) + 1000; // Random amount between 1000-11000
-        
-        const order = this.createOrder({
-          userId: i,
-          totalAmount,
-          status: randomStatus,
-          shippingAddress: "123 Test Street, Test City, 400001",
-          paymentMethod: Math.random() > 0.5 ? "Credit Card" : "UPI",
-          createdAt: orderDate
-        });
-        
-        // Add 1-3 random products to each order
-        const numProducts = Math.floor(Math.random() * 3) + 1;
-        for (let k = 0; k < numProducts; k++) {
-          const productId = Math.floor(Math.random() * 18) + 1; // Random product (1-18)
-          const product = this.productsMap.get(productId);
-          
-          if (product) {
-            this.addOrderItem({
-              orderId: order.id,
-              productId,
-              quantity: Math.floor(Math.random() * 3) + 1,
-              price: product.price,
-            });
-          }
-        }
-      }
-    }
+    // We'll skip the sample orders for now to fix the initialization issues
+    // They can be added later when the app is properly running
   }
 
   // User methods
@@ -535,14 +508,18 @@ export class MemStorage implements IStorage {
   }
   
   async updateUserAdminStatus(id: number, isAdmin: boolean): Promise<User | undefined> {
+    console.log("[storage] Updating user admin status", { id, isAdmin });
     const user = await this.getUser(id);
     
     if (!user) {
+      console.log("[storage] User not found", { id });
       return undefined;
     }
     
+    console.log("[storage] Found user", { user });
     const updatedUser: User = { ...user, isAdmin };
     this.usersMap.set(id, updatedUser);
+    console.log("[storage] User admin status updated", { updatedUser });
     return updatedUser;
   }
   
