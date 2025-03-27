@@ -31,6 +31,10 @@ const ProductCard = ({ product, size = "medium" }: ProductCardProps) => {
           src={thumbnail}
           alt={title}
           className={`${imageClasses[size]} object-contain mx-auto`}
+          onError={(e) => {
+            // Fall back to a reliable placeholder if image doesn't load
+            (e.target as HTMLImageElement).src = `https://via.placeholder.com/300x300/2874f0/ffffff?text=${encodeURIComponent(title)}`;
+          }}
         />
         <h3 className="mt-3 text-sm font-medium text-[#212121] truncate">{title}</h3>
         

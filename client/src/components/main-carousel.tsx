@@ -57,7 +57,11 @@ const MainCarousel = () => {
             <img 
               src={banner.image}
               alt="Banner" 
-              className="w-full h-64 object-cover object-center cursor-pointer" 
+              className="w-full h-64 object-cover object-center cursor-pointer"
+              onError={(e) => {
+                // Fall back to a reliable placeholder if image doesn't load
+                (e.target as HTMLImageElement).src = "https://via.placeholder.com/1200x300/2874f0/ffffff?text=Flipkart+Special+Offers";
+              }}
             />
           </Link>
         ))}
