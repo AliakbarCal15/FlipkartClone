@@ -48,7 +48,8 @@ import {
   Upload,
   Bell,
   Percent,
-  Copy
+  Copy,
+  Loader2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +67,9 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Product as ProductType } from "@shared/schema";
 
 // Import the new product management components
 import { BulkUpload } from "./bulk-upload";
@@ -73,21 +77,8 @@ import { StockAlerts } from "./stock-alerts";
 import { ProductImageGallery } from "./product-image-gallery";
 import { DiscountManager } from "./discount-manager";
 
-// Mock data and interfaces for product management
-export interface Product {
-  id: number;
-  title: string;
-  description: string;
-  price: number;
-  discountPercentage: number | null;
-  rating: number | null;
-  stock: number;
-  brand: string;
-  category: string;
-  thumbnail: string;
-  images: string[];
-  createdAt: string;
-}
+// Product interfaces
+export interface Product extends ProductType {}
 
 const categories = [
   "Electronics",
@@ -117,7 +108,6 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 export const ManageProducts = () => {
   const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -125,34 +115,84 @@ export const ManageProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const productsPerPage = 10;
 
-  // Initialize local storage with demo products if needed
-  useEffect(() => {
-    const storedProducts = localStorage.getItem('admin_products');
-    if (!storedProducts) {
-      // Generate some demo products
-      const demoProducts: Product[] = Array.from({ length: 20 }, (_, i) => ({
-        id: i + 1,
-        title: `Product ${i + 1}`,
-        description: `This is a description for product ${i + 1}. It includes all the details about the product.`,
-        price: Math.floor(Math.random() * 10000) + 500,
-        discountPercentage: Math.floor(Math.random() * 70),
-        rating: (Math.random() * 2 + 3).toFixed(1) as unknown as number,
-        stock: Math.floor(Math.random() * 100) + 10,
-        brand: ["Apple", "Samsung", "Sony", "HP", "Dell", "Lenovo", "Asus", "Nike", "Adidas", "Puma"][Math.floor(Math.random() * 10)],
-        category: categories[Math.floor(Math.random() * categories.length)],
-        thumbnail: `https://images.unsplash.com/photo-${1590000000000 + i}?w=400&h=400&fit=crop`,
-        images: [
-          `https://images.unsplash.com/photo-${1590000000000 + i}?w=400&h=400&fit=crop`,
-          `https://images.unsplash.com/photo-${1591000000000 + i}?w=400&h=400&fit=crop`
-        ],
-        createdAt: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString()
-      }));
-      localStorage.setItem('admin_products', JSON.stringify(demoProducts));
-      setProducts(demoProducts);
-    } else {
-      setProducts(JSON.parse(storedProducts));
+  // Fetch products from API
+  const { data: products = [], isLoading, error } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+  });
+
+  // Add Product Mutation
+  const addProductMutation = useMutation({
+    mutationFn: async (data: ProductFormValues) => {
+      const res = await apiRequest("POST", "/api/admin/products", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch products list
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Added",
+        description: "The product has been added to the catalog.",
+      });
+      setIsAddProductOpen(false);
+      setEditingProduct(null);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Product",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-  }, []);
+  });
+
+  // Update Product Mutation
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: ProductFormValues }) => {
+      const res = await apiRequest("PATCH", `/api/admin/products/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch products list
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Updated",
+        description: "The product has been updated successfully.",
+      });
+      setIsAddProductOpen(false);
+      setEditingProduct(null);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update Product",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete Product Mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/products/${id}`);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch products list
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Deleted",
+        description: "The product has been removed from the catalog.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Delete Product",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -184,35 +224,11 @@ export const ManageProducts = () => {
   const onSubmit = (data: ProductFormValues) => {
     if (editingProduct) {
       // Update existing product
-      const updatedProducts = products.map(product => 
-        product.id === editingProduct.id ? { ...product, ...data } : product
-      );
-      setProducts(updatedProducts);
-      localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
-      toast({
-        title: "Product Updated",
-        description: `${data.title} has been updated successfully.`,
-      });
+      updateProductMutation.mutate({ id: editingProduct.id, data });
     } else {
       // Add new product
-      const newProduct: Product = {
-        ...data,
-        id: products.length ? Math.max(...products.map(p => p.id)) + 1 : 1,
-        rating: 0,
-        createdAt: new Date().toISOString()
-      };
-      const updatedProducts = [...products, newProduct];
-      setProducts(updatedProducts);
-      localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
-      toast({
-        title: "Product Added",
-        description: `${data.title} has been added to the catalog.`,
-      });
+      addProductMutation.mutate(data);
     }
-    
-    setIsAddProductOpen(false);
-    setEditingProduct(null);
-    form.reset();
   };
 
   const handleEditProduct = (product: Product) => {
@@ -233,14 +249,7 @@ export const ManageProducts = () => {
 
   const handleDeleteProduct = (id: number) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
-      const updatedProducts = products.filter(product => product.id !== id);
-      setProducts(updatedProducts);
-      localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
-      toast({
-        title: "Product Deleted",
-        description: "The product has been removed from the catalog.",
-        variant: "destructive"
-      });
+      deleteProductMutation.mutate(id);
     }
   };
 
@@ -461,9 +470,21 @@ export const ManageProducts = () => {
                     </div>
                     
                     <DialogFooter className="pt-4">
-                      <Button type="submit">
-                        <Save className="mr-2 h-4 w-4" />
-                        {editingProduct ? "Update Product" : "Save Product"}
+                      <Button 
+                        type="submit" 
+                        disabled={addProductMutation.isPending || updateProductMutation.isPending}
+                      >
+                        {(addProductMutation.isPending || updateProductMutation.isPending) ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            {editingProduct ? "Update Product" : "Save Product"}
+                          </>
+                        )}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -481,20 +502,28 @@ export const ManageProducts = () => {
         <div className="flex flex-wrap gap-2 mb-4">
           <BulkUpload 
             onProductsUploaded={(newProducts) => {
-              const updatedProducts = [...products, ...newProducts];
-              setProducts(updatedProducts);
-              localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+              // For each new product, call the create API
+              newProducts.forEach(product => {
+                addProductMutation.mutate(product);
+              });
+              
+              // Refresh product list
+              queryClient.invalidateQueries({ queryKey: ["/api/products"] });
             }} 
           />
           
           <StockAlerts 
             products={products} 
             onUpdateProductStock={(productId, newStock) => {
-              const updatedProducts = products.map(product => 
-                product.id === productId ? { ...product, stock: newStock } : product
-              );
-              setProducts(updatedProducts);
-              localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+              // Find the product to update
+              const product = products.find(p => p.id === productId);
+              if (product) {
+                // Update the product with new stock
+                updateProductMutation.mutate({ 
+                  id: productId, 
+                  data: { ...product, stock: newStock } 
+                });
+              }
             }} 
           />
           
@@ -502,13 +531,16 @@ export const ManageProducts = () => {
             products={products}
             categories={categories}
             onApplyDiscount={(productIds, discountPercentage) => {
-              const updatedProducts = products.map(product => 
-                productIds.includes(product.id) 
-                  ? { ...product, discountPercentage } 
-                  : product
-              );
-              setProducts(updatedProducts);
-              localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+              // Update each product in the list with the new discount
+              productIds.forEach(productId => {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                  updateProductMutation.mutate({
+                    id: productId,
+                    data: { ...product, discountPercentage }
+                  });
+                }
+              });
             }}
           />
           
@@ -572,7 +604,22 @@ export const ManageProducts = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentProducts.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6">
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+                      <span>Loading products...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-destructive">
+                    Error loading products. Please try again later.
+                  </TableCell>
+                </TableRow>
+              ) : currentProducts.length > 0 ? (
                 currentProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.id}</TableCell>
@@ -622,18 +669,28 @@ export const ManageProducts = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEditProduct(product)}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0" 
+                          onClick={() => handleEditProduct(product)}
+                          disabled={updateProductMutation.isPending}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         
                         <ProductImageGallery 
                           product={product}
                           onUpdateImages={(productId, images, thumbnail) => {
-                            const updatedProducts = products.map(p => 
-                              p.id === productId ? { ...p, images, thumbnail } : p
-                            );
-                            setProducts(updatedProducts);
-                            localStorage.setItem('admin_products', JSON.stringify(updatedProducts));
+                            // Find the product to update
+                            const productToUpdate = products.find(p => p.id === productId);
+                            if (productToUpdate) {
+                              // Update the product with new images and thumbnail
+                              updateProductMutation.mutate({
+                                id: productId,
+                                data: { ...productToUpdate, images, thumbnail }
+                              });
+                            }
                           }}
                         />
                         
@@ -642,8 +699,13 @@ export const ManageProducts = () => {
                           size="sm"
                           className="h-8 w-8 p-0 text-destructive"
                           onClick={() => handleDeleteProduct(product.id)}
+                          disabled={deleteProductMutation.isPending}
                         >
-                          <Trash className="h-4 w-4" />
+                          {deleteProductMutation.isPending && deleteProductMutation.variables === product.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>

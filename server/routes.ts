@@ -351,6 +351,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin routes - Update product
+  app.patch("/api/admin/products/:id", async (req, res) => {
+    try {
+      console.log("Update product request received", { params: req.params, body: req.body });
+      
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        console.log("User not authenticated or not admin", { isAuthenticated: req.isAuthenticated(), isAdmin: req.user?.isAdmin });
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const id = parseInt(req.params.id);
+      console.log("Updating product", { id, data: req.body });
+      
+      // First check if product exists
+      const existingProduct = await storage.getProduct(id);
+      if (!existingProduct) {
+        console.log("Product not found", { id });
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Delete the old product
+      await storage.deleteProduct(id);
+      
+      // Create a new product with the same ID and updated fields
+      const updatedProduct = await storage.createProduct({
+        ...req.body,
+        id
+      });
+      
+      console.log("Product updated successfully", { updatedProduct });
+      res.json(updatedProduct);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      console.error("Error updating product", { error, message });
+      res.status(500).json({ message });
+    }
+  });
+  
   // Admin routes - Delete product
   app.delete("/api/admin/products/:id", async (req, res) => {
     try {
