@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,26 +41,112 @@ import {
   Filter, 
   PlusCircle, 
   Edit, 
-  Trash 
+  Trash,
+  Loader2
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { User } from "@shared/schema";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 
 // Import product management components directly
 import { ManageProducts } from "../components/admin/manage-products";
 import { ManageOrders } from "../components/admin/manage-orders";
 
+type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
+type Order = {
+  id: number;
+  userId: number;
+  totalAmount: number;
+  status: OrderStatus;
+  shippingAddress: string;
+  paymentMethod: string;
+  createdAt: Date;
+};
+
+type AnalyticsData = {
+  userCount: number;
+  orderCount: number;
+  productCount: number;
+  revenue: number;
+  orderStats: { date: string; count: number; revenue: number }[];
+};
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
-
-  const getStats = () => {
-    return {
-      totalProducts: 18,
-      totalOrders: 157,
-      totalUsers: 423,
-      revenue: "₹1,24,567"
-    };
+  const { toast } = useToast();
+  
+  // Fetch analytics data
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AnalyticsData>({
+    queryKey: ["/api/admin/analytics"],
+    retry: false,
+  });
+  
+  // Fetch users
+  const { data: users, isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/admin/users"],
+    enabled: activeTab === "users",
+    retry: false,
+  });
+  
+  // Fetch orders for the overview page
+  const { data: recentOrders, isLoading: ordersLoading } = useQuery<Order[]>({
+    queryKey: ["/api/admin/orders"],
+    select: (data) => data.slice(0, 5).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ),
+    retry: false,
+  });
+  
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete user");
+      }
+      return true;
+    },
+    onSuccess: () => {
+      toast({
+        title: "User deleted",
+        description: "The user has been deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleDeleteUser = (userId: number) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      deleteUserMutation.mutate(userId);
+    }
   };
 
-  const stats = getStats();
+  // Format the analytics data for display
+  const stats = {
+    totalProducts: analyticsData?.productCount || 0,
+    totalOrders: analyticsData?.orderCount || 0,
+    totalUsers: analyticsData?.userCount || 0,
+    revenue: `₹${analyticsData?.revenue.toLocaleString('en-IN') || '0'}`
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -148,38 +236,85 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle>Recent Orders</CardTitle>
               <CardDescription>
-                You have 6 orders this week.
+                {ordersLoading ? "Loading orders..." : 
+                 `You have ${recentOrders?.length || 0} recent orders.`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">ORD-{2300 + i}</TableCell>
-                      <TableCell>User {i}</TableCell>
-                      <TableCell>Product {i}</TableCell>
-                      <TableCell>{new Date().toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={i % 3 === 0 ? "default" : i % 2 === 0 ? "secondary" : "outline"}>
-                          {i % 3 === 0 ? "Delivered" : i % 2 === 0 ? "Shipped" : "Processing"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>₹{Math.floor(Math.random() * 10000)}</TableCell>
+              {ordersLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : recentOrders && recentOrders.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Customer ID</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Amount</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">ORD-{order.id}</TableCell>
+                        <TableCell>User {order.userId}</TableCell>
+                        <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            order.status === 'delivered' ? "default" : 
+                            order.status === 'shipped' ? "secondary" : 
+                            order.status === 'cancelled' ? "destructive" : "outline"
+                          }>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>₹{order.totalAmount.toLocaleString('en-IN')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  No orders found.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Sales Analytics Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Analytics</CardTitle>
+              <CardDescription>
+                Revenue and order count for the last 7 days
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <div className="flex justify-center items-center h-80">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : analyticsData?.orderStats ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={analyticsData.orderStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                    <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="count" name="Orders" fill="#8884d8" />
+                    <Bar yAxisId="right" dataKey="revenue" name="Revenue (₹)" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  No analytics data available.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -221,62 +356,89 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Joined Date</TableHead>
-                    <TableHead>Orders</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">USR-{1000 + i}</TableCell>
-                      <TableCell>User Name {i}</TableCell>
-                      <TableCell>user{i}@example.com</TableCell>
-                      <TableCell>{new Date().toLocaleDateString()}</TableCell>
-                      <TableCell>{Math.floor(Math.random() * 10)}</TableCell>
-                      <TableCell className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive">
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {usersLoading ? (
+                <div className="flex justify-center items-center h-60">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : users && users.length > 0 ? (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User ID</TableHead>
+                        <TableHead>Username</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Admin</TableHead>
+                        <TableHead>Joined Date</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">USR-{user.id}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.email || "N/A"}</TableCell>
+                          <TableCell>
+                            {user.isAdmin ? (
+                              <Badge variant="default">Admin</Badge>
+                            ) : (
+                              <Badge variant="outline">Customer</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-destructive"
+                              onClick={() => handleDeleteUser(user.id)}
+                              disabled={user.isAdmin || deleteUserMutation.isPending}
+                            >
+                              {deleteUserMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
 
-              <div className="mt-4 flex items-center justify-end">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious href="#" />
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationLink href="#" isActive>1</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationLink href="#">2</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationLink href="#">3</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationNext href="#" />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
+                  {users.length > 10 && (
+                    <div className="mt-4 flex items-center justify-end">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious href="#" />
+                          </PaginationItem>
+                          <PaginationItem>
+                            <PaginationLink href="#" isActive>1</PaginationLink>
+                          </PaginationItem>
+                          <PaginationItem>
+                            <PaginationLink href="#">2</PaginationLink>
+                          </PaginationItem>
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                          <PaginationItem>
+                            <PaginationNext href="#" />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  No users found.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

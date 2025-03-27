@@ -21,12 +21,17 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  deleteUser(id: number): Promise<boolean>;
+  getAllUsers(): Promise<User[]>;
+  getUserCount(): Promise<number>;
   
   // Product methods
   getProduct(id: number): Promise<Product | undefined>;
   getProducts(options?: { limit?: number, category?: string }): Promise<Product[]>;
   getProductsByCategory(category: string): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
+  deleteProduct(id: number): Promise<boolean>;
+  getProductCount(): Promise<number>;
   
   // Category methods
   getCategories(): Promise<Category[]>;
@@ -47,6 +52,10 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   addOrderItem(orderItem: InsertOrderItem): Promise<OrderItem>;
   getOrderWithItems(orderId: number): Promise<{ order: Order, items: (OrderItem & { product: Product })[] } | undefined>;
+  getAllOrders(): Promise<Order[]>;
+  getOrderCount(): Promise<number>;
+  getTotalRevenue(): Promise<number>;
+  getOrderStats(): Promise<{ date: string, count: number, revenue: number }[]>;
   
   // Banner methods
   getBanners(): Promise<Banner[]>;
@@ -441,6 +450,23 @@ export class MemStorage implements IStorage {
     return user;
   }
 
+  // Add user management methods for admin
+  async deleteUser(id: number): Promise<boolean> {
+    if (!this.usersMap.has(id)) {
+      return false;
+    }
+    this.usersMap.delete(id);
+    return true;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.usersMap.values());
+  }
+  
+  async getUserCount(): Promise<number> {
+    return this.usersMap.size;
+  }
+  
   // Product methods
   async getProduct(id: number): Promise<Product | undefined> {
     return this.productsMap.get(id);
@@ -459,6 +485,18 @@ export class MemStorage implements IStorage {
     
     return products;
   }
+  
+  async getProductCount(): Promise<number> {
+    return this.productsMap.size;
+  }
+  
+  async deleteProduct(id: number): Promise<boolean> {
+    if (!this.productsMap.has(id)) {
+      return false;
+    }
+    this.productsMap.delete(id);
+    return true;
+  }
 
   async getProductsByCategory(category: string): Promise<Product[]> {
     return Array.from(this.productsMap.values()).filter(
@@ -469,7 +507,13 @@ export class MemStorage implements IStorage {
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const id = this.productIdCounter++;
     const now = new Date();
-    const product: Product = { ...insertProduct, id, createdAt: now };
+    const product: Product = { 
+      ...insertProduct, 
+      id, 
+      createdAt: now,
+      discountPercentage: insertProduct.discountPercentage ?? null,
+      rating: insertProduct.rating ?? null
+    };
     this.productsMap.set(id, product);
     return product;
   }
@@ -529,14 +573,19 @@ export class MemStorage implements IStorage {
     );
     
     if (existingItem) {
-      // Update quantity
-      return await this.updateCartItem(existingItem.id, existingItem.quantity + insertCartItem.quantity) as CartItem;
+      // Update quantity - use default of 1 if quantity is undefined
+      return await this.updateCartItem(existingItem.id, existingItem.quantity + (insertCartItem.quantity || 1)) as CartItem;
     }
     
     // Create new item
     const id = this.cartItemIdCounter++;
     const now = new Date();
-    const cartItem: CartItem = { ...insertCartItem, id, createdAt: now };
+    const cartItem: CartItem = { 
+      ...insertCartItem, 
+      id, 
+      createdAt: now,
+      quantity: insertCartItem.quantity || 1 // Use default of 1 if quantity is undefined
+    };
     this.cartItemsMap.set(id, cartItem);
     return cartItem;
   }
@@ -568,7 +617,12 @@ export class MemStorage implements IStorage {
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
     const id = this.orderIdCounter++;
     const now = new Date();
-    const order: Order = { ...insertOrder, id, createdAt: now };
+    const order: Order = { 
+      ...insertOrder, 
+      id, 
+      createdAt: now,
+      status: insertOrder.status || 'pending' // Default status
+    };
     this.ordersMap.set(id, order);
     return order;
   }
@@ -597,6 +651,57 @@ export class MemStorage implements IStorage {
     
     return { order, items };
   }
+  
+  // Admin order methods
+  async getAllOrders(): Promise<Order[]> {
+    return Array.from(this.ordersMap.values());
+  }
+  
+  async getOrderCount(): Promise<number> {
+    return this.ordersMap.size;
+  }
+  
+  async getTotalRevenue(): Promise<number> {
+    const orders = Array.from(this.ordersMap.values());
+    return orders.reduce((total, order) => total + order.totalAmount, 0);
+  }
+  
+  async getOrderStats(): Promise<{ date: string, count: number, revenue: number }[]> {
+    const orders = Array.from(this.ordersMap.values());
+    
+    // Group orders by date
+    const ordersByDate = orders.reduce((acc, order) => {
+      const date = new Date(order.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      if (!acc[date]) {
+        acc[date] = {
+          date,
+          count: 0,
+          revenue: 0
+        };
+      }
+      
+      acc[date].count += 1;
+      acc[date].revenue += order.totalAmount;
+      
+      return acc;
+    }, {} as Record<string, { date: string, count: number, revenue: number }>);
+    
+    // Get last 7 days
+    const result = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+      
+      result.push(ordersByDate[dateString] || { date: dateString, count: 0, revenue: 0 });
+    }
+    
+    // Sort by date ascending
+    return result.sort((a, b) => a.date.localeCompare(b.date));
+  }
 
   // Banner methods
   async getBanners(): Promise<Banner[]> {
@@ -606,7 +711,12 @@ export class MemStorage implements IStorage {
   async createBanner(insertBanner: InsertBanner): Promise<Banner> {
     const id = this.bannerIdCounter++;
     const now = new Date();
-    const banner: Banner = { ...insertBanner, id, createdAt: now };
+    const banner: Banner = { 
+      ...insertBanner, 
+      id, 
+      createdAt: now,
+      active: insertBanner.active ?? true // Default to active if not specified
+    };
     this.bannersMap.set(id, banner);
     return banner;
   }
@@ -627,7 +737,12 @@ export class MemStorage implements IStorage {
   async createReview(insertReview: InsertReview): Promise<Review> {
     const id = this.reviewIdCounter++;
     const now = new Date();
-    const review: Review = { ...insertReview, id, createdAt: now };
+    const review: Review = { 
+      ...insertReview, 
+      id, 
+      createdAt: now,
+      comment: insertReview.comment ?? null // Default to null if comment is not provided
+    };
     this.reviewsMap.set(id, review);
     
     // Update product rating

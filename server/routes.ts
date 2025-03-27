@@ -250,6 +250,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes
+  app.get("/api/check-admin", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const isAdmin = req.user.isAdmin === true;
+      res.json({ isAdmin });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Get all users
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Get all orders
+  app.get("/api/admin/orders", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const orders = await storage.getAllOrders();
+      res.json(orders);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Create product
+  app.post("/api/admin/products", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const product = await storage.createProduct(req.body);
+      res.status(201).json(product);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Delete product
+  app.delete("/api/admin/products/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteProduct(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Delete user
+  app.delete("/api/admin/users/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const id = parseInt(req.params.id);
+      
+      // Don't allow deleting yourself
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "Cannot delete yourself" });
+      }
+      
+      const success = await storage.deleteUser(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Admin routes - Get analytics data
+  app.get("/api/admin/analytics", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const userCount = await storage.getUserCount();
+      const orderCount = await storage.getOrderCount();
+      const productCount = await storage.getProductCount();
+      const revenue = await storage.getTotalRevenue();
+      const orderStats = await storage.getOrderStats();
+      
+      res.json({
+        userCount,
+        orderCount,
+        productCount,
+        revenue,
+        orderStats
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
   // Reviews routes
   app.get("/api/products/:id/reviews", async (req, res) => {
     try {
