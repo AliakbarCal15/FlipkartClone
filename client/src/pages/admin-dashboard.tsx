@@ -83,15 +83,27 @@ type AnalyticsData = {
   productCount: number;
   revenue: number;
   orderStats: { date: string; count: number; revenue: number }[];
+  topProducts?: { id: number, title: string, totalSold: number, revenue: number }[];
+  timeframe?: string;
 };
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
   const { toast } = useToast();
   
-  // Fetch analytics data
+  // Fetch analytics data with timeframe filter
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AnalyticsData>({
-    queryKey: ["/api/admin/analytics"],
+    queryKey: ["/api/admin/analytics", timeframe],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/analytics?timeframe=${timeframe}`, {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        throw new Error('Failed to fetch analytics data');
+      }
+      return res.json();
+    },
     retry: false,
   });
   
@@ -129,7 +141,7 @@ export default function AdminDashboard() {
         description: "The user has been deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics", timeframe] });
     },
     onError: (error: Error) => {
       toast({
@@ -364,14 +376,31 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           
-          {/* Sales Analytics Chart */}
+          {/* Analytics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Sales Analytics</CardTitle>
-                <CardDescription>
-                  Revenue and order count for the last 7 days
-                </CardDescription>
+              <CardHeader className="pb-0">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Sales Analytics</CardTitle>
+                    <CardDescription>
+                      Revenue and order count for the selected time period
+                    </CardDescription>
+                  </div>
+                  <Select 
+                    value={timeframe} 
+                    onValueChange={(value) => setTimeframe(value as '7d' | '30d' | '90d')}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select time period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7d">Last 7 days</SelectItem>
+                      <SelectItem value="30d">Last 30 days</SelectItem>
+                      <SelectItem value="90d">Last 90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
                 {analyticsLoading ? (
@@ -454,6 +483,46 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+          
+          {/* Top Selling Products */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Products</CardTitle>
+              <CardDescription>
+                Most popular products by units sold
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : analyticsData?.topProducts && analyticsData.topProducts.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">Units Sold</TableHead>
+                      <TableHead className="text-right">Revenue</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {analyticsData.topProducts.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.title}</TableCell>
+                        <TableCell className="text-right">{product.totalSold}</TableCell>
+                        <TableCell className="text-right">₹{product.revenue.toLocaleString('en-IN')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  No product data available.
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="products">

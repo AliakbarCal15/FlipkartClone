@@ -506,18 +506,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
       
+      // Parse timeframe from query params with default value
+      const timeframe = req.query.timeframe || '7d'; // default to 7 days
+      let days = 7;
+      
+      // Convert timeframe to days
+      if (timeframe === '30d') days = 30;
+      else if (timeframe === '90d') days = 90;
+      else if (timeframe === '7d') days = 7;
+      
       const userCount = await storage.getUserCount();
       const orderCount = await storage.getOrderCount();
       const productCount = await storage.getProductCount();
       const revenue = await storage.getTotalRevenue();
-      const orderStats = await storage.getOrderStats();
+      const orderStats = await storage.getOrderStats(days);
+      const topProducts = await storage.getTopProducts(5);
       
       res.json({
         userCount,
         orderCount,
         productCount,
         revenue,
-        orderStats
+        orderStats,
+        topProducts,
+        timeframe
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "An error occurred";

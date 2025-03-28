@@ -795,11 +795,22 @@ export class MemStorage implements IStorage {
     return orders.reduce((total, order) => total + order.totalAmount, 0);
   }
   
-  async getOrderStats(): Promise<{ date: string, count: number, revenue: number }[]> {
+  async getOrderStats(days: number = 7): Promise<{ date: string, count: number, revenue: number }[]> {
     const orders = Array.from(this.ordersMap.values());
     
+    // Calculate start date based on requested days
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (days - 1));
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Filter orders that fall within the requested date range
+    const filteredOrders = orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      return orderDate >= startDate;
+    });
+    
     // Group orders by date
-    const ordersByDate = orders.reduce((acc, order) => {
+    const ordersByDate = filteredOrders.reduce((acc, order) => {
       const date = new Date(order.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD
       
       if (!acc[date]) {
@@ -816,11 +827,11 @@ export class MemStorage implements IStorage {
       return acc;
     }, {} as Record<string, { date: string, count: number, revenue: number }>);
     
-    // Get last 7 days, even if we don't have orders for those days
+    // Create array for all days in the range, even if we don't have orders
     const result = [];
     const today = new Date();
     
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < days; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
@@ -842,6 +853,38 @@ export class MemStorage implements IStorage {
       if (monthA !== monthB) return monthA - monthB;
       return dayA - dayB;
     });
+  }
+  
+  // Get insights about top-selling products
+  async getTopProducts(limit: number = 5): Promise<{ id: number, title: string, totalSold: number, revenue: number }[]> {
+    const orderItems = Array.from(this.orderItemsMap.values());
+    
+    // Group items by product and calculate totals
+    const productStats = orderItems.reduce((acc, item) => {
+      const productId = item.productId;
+      
+      if (!acc[productId]) {
+        const product = this.productsMap.get(productId);
+        if (!product) return acc;
+        
+        acc[productId] = {
+          id: productId,
+          title: product.title,
+          totalSold: 0,
+          revenue: 0
+        };
+      }
+      
+      acc[productId].totalSold += item.quantity;
+      acc[productId].revenue += item.price * item.quantity;
+      
+      return acc;
+    }, {} as Record<number, { id: number, title: string, totalSold: number, revenue: number }>);
+    
+    // Convert to array, sort by total sold, and limit
+    return Object.values(productStats)
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, limit);
   }
 
   // Banner methods
