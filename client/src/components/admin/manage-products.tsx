@@ -458,40 +458,51 @@ export const ManageProducts = () => {
                       )}
                     />
                     
-                    <div>
-                      <Label className="mb-2 block">Product Images</Label>
-                      {form.getValues().images?.map((image, index) => (
-                        <div key={index} className="flex items-center gap-2 mb-2">
-                          <Input
-                            placeholder={`Image URL ${index + 1}`}
-                            value={image}
-                            onChange={(e) => {
-                              const currentImages = [...form.getValues().images];
-                              currentImages[index] = e.target.value;
-                              form.setValue("images", currentImages);
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => onRemoveImage(index)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={onAddImage}
-                        className="mt-2"
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Image
-                      </Button>
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="images"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel>Product Images</FormLabel>
+                          <div className="space-y-2">
+                            {form.getValues().images?.map((image, index) => (
+                              <div key={index} className="flex items-center gap-2 mb-2">
+                                <FormControl>
+                                  <Input
+                                    placeholder={`Image URL ${index + 1}`}
+                                    value={image}
+                                    onChange={(e) => {
+                                      const currentImages = [...form.getValues().images];
+                                      currentImages[index] = e.target.value;
+                                      form.setValue("images", currentImages);
+                                    }}
+                                  />
+                                </FormControl>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => onRemoveImage(index)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={onAddImage}
+                              className="mt-2"
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add Image
+                            </Button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
                     <DialogFooter className="pt-4">
                       <Button 
