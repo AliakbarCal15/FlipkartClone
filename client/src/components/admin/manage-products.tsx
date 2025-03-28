@@ -235,13 +235,13 @@ export const ManageProducts = () => {
 
   const onAddImage = () => {
     const currentImages = form.getValues().images || [];
-    form.setValue("images", [...currentImages, ""]);
+    form.setValue("images", [...currentImages, ""], { shouldValidate: true });
   };
 
   const onRemoveImage = (index: number) => {
     const currentImages = form.getValues().images || [];
     if (currentImages.length > 1) {
-      form.setValue("images", currentImages.filter((_, i) => i !== index));
+      form.setValue("images", currentImages.filter((_, i) => i !== index), { shouldValidate: true });
     }
   };
 
@@ -461,20 +461,20 @@ export const ManageProducts = () => {
                     <FormField
                       control={form.control}
                       name="images"
-                      render={() => (
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel>Product Images</FormLabel>
                           <div className="space-y-2">
-                            {form.getValues().images?.map((image, index) => (
+                            {field.value?.map((image, index) => (
                               <div key={index} className="flex items-center gap-2 mb-2">
                                 <FormControl>
                                   <Input
                                     placeholder={`Image URL ${index + 1}`}
                                     value={image}
                                     onChange={(e) => {
-                                      const currentImages = [...form.getValues().images];
+                                      const currentImages = [...field.value];
                                       currentImages[index] = e.target.value;
-                                      form.setValue("images", currentImages);
+                                      field.onChange(currentImages);
                                     }}
                                   />
                                 </FormControl>
