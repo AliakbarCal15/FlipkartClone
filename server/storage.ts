@@ -452,8 +452,62 @@ export class MemStorage implements IStorage {
       'pending', 'processing', 'shipped', 'delivered', 'cancelled'
     ];
     
-    // We'll skip the sample orders for now to fix the initialization issues
-    // They can be added later when the app is properly running
+    // Generate sample orders with varied dates over the past 3 months
+    const sampleUsers = [2, 3, 4, 5, 6]; // User IDs 2-6 (skipping admin)
+    const sampleProducts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Product IDs
+    
+    // Create 15 orders with random dates in the past 90 days
+    for (let i = 0; i < 15; i++) {
+      // Create a random date within the past 90 days
+      const randomDaysAgo = Math.floor(Math.random() * 90);
+      const orderDate = new Date();
+      orderDate.setDate(orderDate.getDate() - randomDaysAgo);
+      
+      // Choose a random user
+      const userId = sampleUsers[Math.floor(Math.random() * sampleUsers.length)];
+      
+      // Random order status
+      const status = orderStatuses[Math.floor(Math.random() * orderStatuses.length)];
+      
+      // Create the order
+      const orderId = this.orderIdCounter++;
+      const totalAmount = Math.floor(Math.random() * 10000) + 1000; // Random amount between 1000-11000
+      
+      const order: Order = {
+        id: orderId,
+        userId,
+        totalAmount,
+        status: status,
+        shippingAddress: `${Math.floor(Math.random() * 999) + 1} Sample Street, Sample City, Sample State, ${Math.floor(Math.random() * 900000) + 100000}`,
+        paymentMethod: Math.random() > 0.5 ? 'UPI' : Math.random() > 0.5 ? 'Credit Card' : 'Cash on Delivery',
+        createdAt: orderDate
+      };
+      
+      this.ordersMap.set(orderId, order);
+      
+      // Add 1-3 order items for each order
+      const itemCount = Math.floor(Math.random() * 3) + 1;
+      for (let j = 0; j < itemCount; j++) {
+        const productId = sampleProducts[Math.floor(Math.random() * sampleProducts.length)];
+        const product = this.productsMap.get(productId);
+        
+        if (product) {
+          const quantity = Math.floor(Math.random() * 3) + 1;
+          const price = product.price;
+          
+          const orderItem: OrderItem = {
+            id: this.orderItemIdCounter++,
+            orderId,
+            productId,
+            quantity,
+            price,
+            createdAt: orderDate
+          };
+          
+          this.orderItemsMap.set(orderItem.id, orderItem);
+        }
+      }
+    }
   }
 
   // User methods
@@ -762,7 +816,7 @@ export class MemStorage implements IStorage {
       return acc;
     }, {} as Record<string, { date: string, count: number, revenue: number }>);
     
-    // Get last 7 days
+    // Get last 7 days, even if we don't have orders for those days
     const result = [];
     const today = new Date();
     
@@ -774,8 +828,20 @@ export class MemStorage implements IStorage {
       result.push(ordersByDate[dateString] || { date: dateString, count: 0, revenue: 0 });
     }
     
+    // Format date as DD/MM for display
+    result.forEach(item => {
+      const [year, month, day] = item.date.split('-');
+      item.date = `${day}/${month}`;
+    });
+    
     // Sort by date ascending
-    return result.sort((a, b) => a.date.localeCompare(b.date));
+    return result.sort((a, b) => {
+      const [dayA, monthA] = a.date.split('/').map(Number);
+      const [dayB, monthB] = b.date.split('/').map(Number);
+      
+      if (monthA !== monthB) return monthA - monthB;
+      return dayA - dayB;
+    });
   }
 
   // Banner methods

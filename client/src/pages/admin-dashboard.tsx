@@ -54,7 +54,10 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
 } from "recharts";
 
 // Import admin components
@@ -99,14 +102,16 @@ export default function AdminDashboard() {
     retry: false,
   });
   
-  // Fetch orders for the overview page
-  const { data: recentOrders, isLoading: ordersLoading } = useQuery<Order[]>({
+  // Fetch orders
+  const { data: allOrders, isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
-    select: (data) => data.slice(0, 5).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ),
     retry: false,
   });
+  
+  // Get recent orders for the overview page
+  const recentOrders = allOrders ? allOrders
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5) : undefined;
   
   // Delete user mutation
   const deleteUserMutation = useMutation({
@@ -360,38 +365,95 @@ export default function AdminDashboard() {
           </Card>
           
           {/* Sales Analytics Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sales Analytics</CardTitle>
-              <CardDescription>
-                Revenue and order count for the last 7 days
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {analyticsLoading ? (
-                <div className="flex justify-center items-center h-80">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : analyticsData?.orderStats ? (
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={analyticsData.orderStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                    <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="count" name="Orders" fill="#8884d8" />
-                    <Bar yAxisId="right" dataKey="revenue" name="Revenue (₹)" fill="#82ca9d" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-center py-10 text-muted-foreground">
-                  No analytics data available.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sales Analytics</CardTitle>
+                <CardDescription>
+                  Revenue and order count for the last 7 days
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <div className="flex justify-center items-center h-80">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : analyticsData?.orderStats ? (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={analyticsData.orderStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                      <Tooltip />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="count" name="Orders" fill="#8884d8" />
+                      <Bar yAxisId="right" dataKey="revenue" name="Revenue (₹)" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                    No analytics data available.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Order Status Distribution Pie Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Status Distribution</CardTitle>
+                <CardDescription>
+                  Breakdown of orders by status
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <div className="flex justify-center items-center h-80">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : allOrders && allOrders.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Pending', value: allOrders.filter(o => o.status === 'pending').length, color: '#FFB547' },
+                          { name: 'Processing', value: allOrders.filter(o => o.status === 'processing').length, color: '#7B8DEA' },
+                          { name: 'Shipped', value: allOrders.filter(o => o.status === 'shipped').length, color: '#55C8F0' },
+                          { name: 'Delivered', value: allOrders.filter(o => o.status === 'delivered').length, color: '#5CDD8B' },
+                          { name: 'Cancelled', value: allOrders.filter(o => o.status === 'cancelled').length, color: '#FF6B6B' },
+                        ]}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        fill="#8884d8"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {[
+                          { name: 'Pending', value: allOrders.filter(o => o.status === 'pending').length, color: '#FFB547' },
+                          { name: 'Processing', value: allOrders.filter(o => o.status === 'processing').length, color: '#7B8DEA' },
+                          { name: 'Shipped', value: allOrders.filter(o => o.status === 'shipped').length, color: '#55C8F0' },
+                          { name: 'Delivered', value: allOrders.filter(o => o.status === 'delivered').length, color: '#5CDD8B' },
+                          { name: 'Cancelled', value: allOrders.filter(o => o.status === 'cancelled').length, color: '#FF6B6B' },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value} orders`, 'Count']} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                    No order status data available.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="products">
