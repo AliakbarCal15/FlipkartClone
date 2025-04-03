@@ -116,6 +116,8 @@ export const ManageProducts = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const productsPerPage = 10;
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // Fetch products from API
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
@@ -276,9 +278,21 @@ export const ManageProducts = () => {
       deleteProductMutation.mutate(id);
     }
   };
-
-  // Filter products based on search and category
-  const filteredProducts = products.filter(product => {
+  const sortedProducts = [...products].sort((a, b) => {
+    if (!sortBy) return 0; // If no sorting criteria, return as is
+    
+    const aValue = a[sortBy as keyof Product];
+    const bValue = b[sortBy as keyof Product];
+  
+    if (aValue == null || bValue == null) return 0; // Avoid errors when values are undefined
+  
+    if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+  
+  // Filter products based on search, category, and sorting
+  const filteredProducts = sortedProducts.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.brand.toLowerCase().includes(searchTerm.toLowerCase());
@@ -619,23 +633,96 @@ export const ManageProducts = () => {
                 ))}
               </SelectContent>
             </Select>
+            <div
+  onClick={() => {
+    if (sortBy === "id") {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy("id");
+      setSortOrder("asc");
+    }
+  }}
+>
+  Showing {currentProducts?.length || 0} of {filteredProducts?.length || 0} products
+</div>
           </div>
-          <div className="text-sm text-muted-foreground">
-            Showing {currentProducts.length} of {filteredProducts.length} products
-          </div>
+          <Button variant="outline" onClick={() => setIsAddProductOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Product
+          </Button>
         </div>
 
         <div className="border rounded-md">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>
+                  <button
+                  onClick={() => setSortBy("id")}
+                  className={`flex items-center gap-1 ${
+                    sortBy === "id" ? "font-bold" : ""
+                  }`}
+                  >
+                  ID
+                  {sortBy === "id" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                  onClick={() => setSortBy("title")}
+                  className={`flex items-center gap-1 ${
+                    sortBy === "title" ? "font-bold" : ""
+                  }`}
+                  >
+                  Product
+                  {sortBy === "title" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                  onClick={() => setSortBy("category")}
+                  className={`flex items-center gap-1 ${
+                    sortBy === "category" ? "font-bold" : ""
+                  }`}
+                  >
+                  Category
+                  {sortBy === "category" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                  onClick={() => setSortBy("price")}
+                  className={`flex items-center gap-1 ${
+                    sortBy === "price" ? "font-bold" : ""
+                  }`}
+                  >
+                  Price
+                  {sortBy === "price" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                  onClick={() => setSortBy("stock")}
+                  className={`flex items-center gap-1 ${
+                    sortBy === "stock" ? "font-bold" : ""
+                  }`}
+                  >
+                  Stock
+                  {sortBy === "stock" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                  onClick={() => setSortBy("dateAdded")}
+                  className={`flex items-center gap-1 ${
+                    sortBy === "dateAdded" ? "font-bold" : ""
+                  }`}
+                  >
+                  Rating 
+                  {sortBy === "dateAdded" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                {/* Removed duplicate TableHead elements */}
               </TableRow>
             </TableHeader>
             <TableBody>
